@@ -1,4 +1,4 @@
 import QuestionContainer from './component';
-import './styles.css';
+import './styles.scss';
 
 export default QuestionContainer;

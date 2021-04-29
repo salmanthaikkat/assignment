@@ -1,43 +1,73 @@
-import { useEffect } from 'react';
-import './App.css';
+import { useEffect, useState } from 'react';
 import requests from './services/apiService';
 import QuestionContainer from './components/QuestionContainer';
+import QuestionModal from './components/QuestionModal';
+import InfiniteScroll from 'react-infinite-scroll-component';
+import { Question } from './interfaces';
 
-const data = {
-  answer_count: 3,
-  content_license: "CC BY-SA 4.0",
-  creation_date: 1619620830,
-  is_answered: true,
-  last_activity_date: 1619626473,
-  link:
-    "https://stackoverflow.com/questions/67302383/swiftui-using-all-but-one-values-of-enum-for-different-pickers",
-  owner: {
-    accept_rate: 86,
-    display_name: "Zonker.in.Geneva",
-    link: "https://stackoverflow.com/users/1363998/zonker-in-geneva",
-    profile_image:
-      "https://www.gravatar.com/avatar/cad3d6c65cb93bd79273d02f17904648?s=128&d=identicon&r=PG",
-    reputation: 1172,
-    user_id: 1363998,
-    user_type: "registered",
-  },
+import './App.scss';
 
-  question_id: 67302383,
-  score: 1,
-  tags: ["swift", "enums", "swiftui", "picker"],
-  title: "SwiftUI - using all but one values of Enum for different Pickers",
-  view_count: 34,
-};
 
 function App() {
+  const [open, setOpen] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  const [questions, setQuestions] = useState<Array<Question>>([]);
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | undefined>();
+  const [remainingQuestions, setRemainingQuestions] = useState<number>(0);
+
+  const fetchData = () => {
+    requests
+      .getQuestions(page)
+      .then((data) => {
+        setQuestions([
+          ...questions,
+          ...data.items
+        ]);
+        setPage(page + 1);
+        setHasMore(data.has_more);
+        setRemainingQuestions(data.quota_remaining);
+      })
+      .catch(err => {
+        throw err;
+      });
+  }
+
   useEffect(() => {
-    console.log('Jee')
-    // requests.getQuestions(1).then((data) => {}).catch(err => {});    
+    fetchData();  
   }, []);
+
+  const handleOpen = (question: Question) => {
+    setSelectedQuestion(question);
+    setOpen(true);
+  }
+
+  const handleClose = () => {
+    setSelectedQuestion(undefined);
+    setOpen(false);
+  }
 
   return (
     <div className="App">
-      <QuestionContainer question={data}/>
+      <h1>Questions</h1>
+      <InfiniteScroll
+        dataLength={remainingQuestions}
+        next={fetchData}
+        hasMore={hasMore}
+        loader={<h4>Loading...</h4>}
+        endMessage={
+          <p style={{ textAlign: 'center' }}>
+            <b>Yay! You have seen it all</b>
+          </p>
+        }
+      >
+        {
+          questions.map((question: Question) => (
+            <QuestionContainer question={question} key={question.question_id} onClick={handleOpen}/>
+          ))
+        }
+      </InfiniteScroll>
+      <QuestionModal open={open} handleClose={handleClose} question={selectedQuestion}/>
     </div>
   );
 }

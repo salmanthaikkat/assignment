@@ -9,4 +9,5 @@ export interface Question {
   owner: User;
   creation_date: number;
   link: string;
+  body: string;
 }
